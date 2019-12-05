@@ -7,10 +7,12 @@ main = do {
     [f, h] <- getArgs;
     s <- readFile f;
     let 
-        tape = map (read :: String -> Int) . splitOn "," $ s
-        input = [read h :: Int]
-        state = State{tape=tape, pc=0, input=input, output=[]}
-        State {tape=t, output=o} = runProgram state
+        State{tape=t, output=o} = runProgram State{
+            tape=map (read :: String -> Int) . splitOn "," $ s, 
+            pc=0, 
+            input=[read h :: Int], 
+            output=[]
+        }
     in
     print o;
 }

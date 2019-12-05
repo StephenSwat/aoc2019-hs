@@ -49,8 +49,9 @@ arguments Exit        = 0
 operation :: Int -> Operation
 operation x = Operation{opcode=opcode, modes=modes}
     where 
-        opcode = opCode (x `mod` 100)
-        modes = map (\y -> opMode ((x `div` (10^(y+1))) `mod` 10)) [1..arguments opcode]
+        (q, r) = x `divMod` 100
+        opcode = opCode r
+        modes = map (opMode . (`mod` 10) . (q `div`) . (10^)) [0..arguments opcode - 1]
 
 getOperation :: [Int] -> (Operation, [Int])
 getOperation (i:xs)
@@ -67,10 +68,10 @@ getArgValue (Reference, x) l = l !! x
 runProgram :: State -> State
 runProgram State{tape=x, pc=c, input=i, output=o}
     | op == Exit = State{tape=x, pc=c, input=i, output=o}
-    | otherwise  = runProgram State{tape=tape, pc=pc, input=input, output=output}
+    | otherwise = runProgram State{tape=tape, pc=pc, input=input, output=output}
     where 
         (Operation{opcode=op,modes=modes}, args) = (getOperation . drop c) x
-        argv = map (\y -> getArgValue y x) (zip modes args) 
+        argv = map (flip getArgValue x) (zip modes args) 
         tape = case op of
             Add         -> (replace x (args !! 2) ((argv !! 0) + (argv !! 1)))
             Multiply    -> (replace x (args !! 2) ((argv !! 0) * (argv !! 1)))
