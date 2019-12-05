@@ -65,17 +65,26 @@ getArgValue (Immediate, x) _ = x
 getArgValue (Reference, x) l = l !! x
         
 runProgram :: State -> State
-runProgram State {tape=x, pc=c, input=i, output=o}
-    | op == Add      = runProgram State{tape=(replace x (args !! 2) ((argv !! 0) + (argv !! 1))), pc=c + 4, input=i, output=o}
-    | op == Multiply = runProgram State{tape=(replace x (args !! 2) ((argv !! 0) * (argv !! 1))), pc=c + 4, input=i, output=o}
-    | op == Write    = runProgram State{tape=(replace x (args !! 0) (head i)), pc=c + 2, input=tail i, output=o}
-    | op == Read     = runProgram State{tape=x, pc=c + 2, input=i, output=o ++ [(argv !! 0)]}
-    | op == BranchTrue = runProgram State{tape=x, pc=if argv !! 0 /= 0 then argv !! 1 else c + 3, input=i, output=o}
-    | op == BranchFalse = runProgram State{tape=x, pc=if argv !! 0 == 0 then argv !! 1 else c + 3, input=i, output=o}
-    | op == LessThan    = runProgram State{tape=(replace x (args !! 2) (if (argv !! 0) < (argv !! 1) then 1 else 0)), pc=c + 4, input=i, output=o}
-    | op == Equals    = runProgram State{tape=(replace x (args !! 2) (if (argv !! 0) == (argv !! 1) then 1 else 0)), pc=c + 4, input=i, output=o}
-    | op == Exit     = State {tape=x, pc=c, input=i, output=o}
-    | otherwise      = error "Bad input!"
+runProgram State{tape=x, pc=c, input=i, output=o}
+    | op == Exit = State{tape=x, pc=c, input=i, output=o}
+    | otherwise  = runProgram State{tape=tape, pc=pc, input=input, output=output}
     where 
         (Operation{opcode=op,modes=modes}, args) = (getOperation . drop c) x
         argv = map (\y -> getArgValue y x) (zip modes args) 
+        tape = case op of
+            Add         -> (replace x (args !! 2) ((argv !! 0) + (argv !! 1)))
+            Multiply    -> (replace x (args !! 2) ((argv !! 0) * (argv !! 1)))
+            Write       -> (replace x (args !! 0) (head i))
+            LessThan    -> (replace x (args !! 2) (if (argv !! 0) < (argv !! 1) then 1 else 0))
+            Equals      -> (replace x (args !! 2) (if (argv !! 0) == (argv !! 1) then 1 else 0))
+            _           -> x
+        input = case op of
+            Write       -> tail i
+            _           -> i
+        output = case op of
+            Read        -> o ++ [(argv !! 0)]
+            _           -> o
+        pc = case op of
+            BranchTrue  -> if argv !! 0 /= 0 then argv !! 1 else c + 3
+            BranchFalse -> if argv !! 0 == 0 then argv !! 1 else c + 3
+            x           -> c + (arguments x) + 1
