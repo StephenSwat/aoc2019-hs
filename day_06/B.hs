@@ -7,7 +7,6 @@ main = do {
     s <- readFile f;
     let 
         q = toTree . parseString $ s
-        r = deepestCommonAncestor q "YOU" "SAN"
     in
-    print (shortestPath r "YOU" "SAN");
+    print ((shortestPath q "YOU" "SAN") - 2);
 }
