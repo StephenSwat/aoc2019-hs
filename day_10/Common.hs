@@ -13,7 +13,7 @@ difference :: Asteroid -> Asteroid -> (Int, Int)
 difference (xo, yo) (xt, yt) = (xt - xo, yt - yo)
 
 angle :: RealFloat a => Asteroid -> Asteroid -> a
-angle a b = -((atan2 (fromIntegral dx) (fromIntegral dy)) - 0.5 * pi)
+angle a b = -(atan2 (fromIntegral dx) (fromIntegral dy)) + 0.5 * pi
     where
         (dx, dy) = difference a b
 
@@ -28,4 +28,11 @@ readAsteroids x = [(x, y) | x <- [0..w-1], y <- [0..h-1], (l !! y) !! x == '#']
         w = length (head l)
         
 angleGrouping :: Asteroid -> [Asteroid] -> [[Asteroid]]
-angleGrouping o l = groupBy (equalAngle o) (sortBy (comparing (angle o)) l)
+angleGrouping o l = map (reverse . sortBy (comparing (sqLen . difference o))) g
+    where
+        g = groupBy (equalAngle o) (sortBy (comparing (angle o)) l)
+        
+vaporizeOrder :: [[Asteroid]] -> [Asteroid]
+vaporizeOrder ([]) = []
+vaporizeOrder ([]:xs) = vaporizeOrder xs
+vaporizeOrder (x:xs) = [head x] ++ vaporizeOrder (xs ++ [tail x])
