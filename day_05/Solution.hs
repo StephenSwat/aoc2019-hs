@@ -1,18 +1,14 @@
 import Data.List.Split
 import Data.List
 import System.Environment
-import Common
+import Intcode
 
 main = do {
     [f, h] <- getArgs;
     s <- readFile f;
     let 
-        State{tape=t, output=o} = runProgram State{
-            tape=map (read :: String -> Int) . splitOn "," $ s, 
-            pc=0, 
-            input=[read h :: Int], 
-            output=[]
-        }
+        initial = initIntcode (map (read :: String -> Int) . splitOn "," $ s) ([read h :: Int])
+        IntcodeState{tape=t, output=o} = runProgram initial
     in
     print o;
 }

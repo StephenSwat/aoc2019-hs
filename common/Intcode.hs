@@ -1,6 +1,6 @@
 module Intcode where
 
-import Data.IntMap (IntMap, insert, fromList, findWithDefault, empty)
+import Data.IntMap (IntMap, insert, fromList, findWithDefault, empty, findMax)
     
 type Tape = IntMap Int
     
@@ -25,6 +25,14 @@ defaultState = IntcodeState{tape=empty, output=[], input=[], pc=0, base=0, halt=
 
 fromTapeList :: [Int] -> IntcodeState
 fromTapeList x = defaultState{tape=fromList (zip [0..] x)}
+
+toTapeList :: IntcodeState -> [Int]
+toTapeList IntcodeState{tape=t} = map (\x -> findWithDefault 0 x t) [0..m]
+    where
+        (m, _) = findMax t
+
+initIntcode :: [Int] -> [Int] -> IntcodeState
+initIntcode x i = defaultState{tape=fromList (zip [0..] x), input=i}
 
 replace :: Tape -> Int -> Int -> Tape
 replace l i n = insert i n l
