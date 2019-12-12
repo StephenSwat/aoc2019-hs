@@ -2,59 +2,58 @@ module Common where
 
 import Data.List.Split
 
-type Pos = (Int, Int, Int)
-type Vel = (Int, Int, Int)
+type Vec3 t = (t, t, t)
 
 data Body = Body {
-    pos :: Pos,
-    vel :: Vel
+    pos :: Vec3 Int,
+    vel :: Vec3 Int
 } deriving (Show)
 
-getDelta :: Ordering -> Int
-getDelta LT = -1
-getDelta EQ = 0
-getDelta GT = 1
 
-sumAbsVector :: (Int, Int, Int) -> Int
-sumAbsVector (a, b, c) = (abs a) + (abs b) + (abs c)
+-- Some operations that work on Vec3 objects...
 
-addVector :: (Int, Int, Int) -> (Int, Int, Int) -> (Int, Int, Int)
-addVector (ax, ay, az) (bx, by, bz) = (ax + bx, ay + by, az + bz)
+monop :: (Num x, Num y) => (x -> y) -> Vec3 x -> Vec3 y
+monop f (x, y, z) = (f x, f y, f z)
 
-sumVelocities :: [Vel] -> Vel
-sumVelocities = foldl addVector (0, 0, 0)
+binop :: (Num x, Num y, Num z) => (x -> y -> z) -> Vec3 x -> Vec3 y -> Vec3 z
+binop f (ax, ay, az) (bx, by, bz) = (f ax bx, f ay by, f az bz)
+
+
+-- These functions parse the problem input.
 
 parseLine :: String -> Body
 parseLine s = Body{pos=(x, y, z), vel=(0, 0, 0)}
     where
-        [x, y, z] = ((map (read :: String -> Int)) . (map (drop 2)) . (splitOn ", ") . init . tail) s
+        q = (map (read :: String -> Int)) . (map (drop 2)) . (splitOn ", ") . init . tail
+        [x, y, z] = q s
 
 parseString :: String -> [Body]
 parseString = (map parseLine) . lines
 
-getGravity :: Body -> Body -> Vel
-getGravity Body{pos=(ax, ay, az)} Body{pos=(bx, by, bz)} = (
-        getDelta (compare bx ax), 
-        getDelta (compare by ay), 
-        getDelta (compare bz az)
-    )
 
-applyVelocity :: Body -> Body
-applyVelocity b@Body{pos=p, vel=v} = b{pos=addVector p v}
+-- These functions define the logic of doing a discrete time step.
 
-applyGravity :: Body -> [Body] -> Body
-applyGravity t@Body{vel=v} r = t{vel=addVector v (sumVelocities vs)}
+stepBody :: Body -> [Body] -> Body
+stepBody t@Body{pos=tp, vel=tv} r = t{vel=nv, pos=binop (+) tp nv}
     where 
-        vs = [getGravity t x | x <- r]
+        nv = foldl (binop (+)) tv [monop signum (binop (-) x tp) | Body{pos=x} <- r]
 
 timeStep :: [Body] -> [Body]
-timeStep l = ((map applyVelocity) . (map (\x -> applyGravity x l))) l
+timeStep l = (map (\x -> stepBody x l)) l
+
+
+-- Functions to calculate the energy in a system, and in individual bodies.
 
 bodyEnergy :: Body -> Int
 bodyEnergy Body{pos=p, vel=v} = (sumAbsVector p) * (sumAbsVector v)
+    where
+        sumAbsVector (a, b, c) = (abs a) + (abs b) + (abs c)
 
 systemEnergy :: [Body] -> Int
-systemEnergy = (foldl (+) 0) . (map bodyEnergy)
+systemEnergy = sum . (map bodyEnergy)
+
+
+-- Eww.
 
 horizontal :: [Body] -> ([Int], [Int], [Int])
 horizontal l = foldl (\(lx, ly, lz) Body{pos=(tx, ty, tz), vel=(vx, vy, vz)} -> (lx ++ [tx, vx], ly ++ [ty, vy], lz ++ [tz, vz])) ([], [], []) l
