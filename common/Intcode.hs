@@ -82,6 +82,11 @@ getOperation (i:xs)
     where 
         op = operation i
         nargs = arguments (opcode op)
+
+nextOpcode :: IntcodeState -> OperationType
+nextOpcode IntcodeState{tape=t, pc=c} = q
+    where
+        (Operation{opcode=q}, _) = getOperation (getRun t [c..c+4])
         
 getArgValue :: (OperandMode, Int) -> IntcodeState -> Int
 getArgValue i@(m, x) s
@@ -106,6 +111,9 @@ takeOutput :: IntcodeState -> Int -> (IntcodeState, [Int])
 takeOutput s@IntcodeState{output=o} n = (s{output=rem}, tk)
     where
         (tk, rem) = splitAt n o
+        
+takeAllOutput :: IntcodeState -> (IntcodeState, [Int])
+takeAllOutput s@IntcodeState{output=o} = (s{output=[]}, o)
 
 stepProgram :: IntcodeState -> IntcodeState
 stepProgram s@IntcodeState{tape=x, pc=c, input=i, output=o, base=b, halt=h} = IntcodeState{tape=tape, pc=pc, input=input, output=output, base=base, halt=halt}
@@ -141,6 +149,9 @@ runProgramUntil :: (IntcodeState -> Bool) -> IntcodeState -> IntcodeState
 runProgramUntil f s
     | (f s) = s
     | otherwise = runProgramUntil f (stepProgram s)
+    
+runProgramUntilNeedInput :: IntcodeState -> IntcodeState
+runProgramUntilNeedInput = runProgramUntil (\s@IntcodeState{input=i, halt=h} -> h || (null i && nextOpcode s == Write))
             
 runProgram :: IntcodeState -> IntcodeState
 runProgram s = runProgramUntil halt s
