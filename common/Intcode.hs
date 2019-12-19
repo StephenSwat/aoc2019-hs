@@ -150,6 +150,9 @@ runProgramUntil f s
     | (f s) = s
     | otherwise = runProgramUntil f (stepProgram s)
     
+runProgramUntilOutput :: IntcodeState -> IntcodeState
+runProgramUntilOutput = runProgramUntil (\IntcodeState{output=o, halt=h} -> h || not (null o))
+
 runProgramUntilNeedInput :: IntcodeState -> IntcodeState
 runProgramUntilNeedInput = runProgramUntil (\s@IntcodeState{input=i, halt=h} -> h || (null i && nextOpcode s == Write))
             
