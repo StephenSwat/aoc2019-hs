@@ -1,5 +1,5 @@
 import System.Environment
-import Common
+import Digits
 
 main = do {
     [f] <- getArgs;

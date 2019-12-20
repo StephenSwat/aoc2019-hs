@@ -1,5 +1,5 @@
 import System.Environment
-import Common
+import Digits
 
 multiplierList :: Int -> [Int]
 multiplierList n = tail (cycle ((q 0) ++ (q 1) ++ (q 0) ++ (q (-1))))
