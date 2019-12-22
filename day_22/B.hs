@@ -6,9 +6,9 @@ import Math.NumberTheory.Euclidean
 import Common
 
 data BinopType = Add | Mul | Sub deriving (Show, Eq)
-data Arithetic = Binop BinopType Arithetic Arithetic | Mod Integer Arithetic | Constant Integer | Variable deriving (Show, Eq)
+data Arithmetic = Binop BinopType Arithmetic Arithmetic | Mod Integer Arithmetic | Constant Integer | Variable deriving (Show, Eq)
 
-evaluate :: Arithetic -> Integer -> Integer
+evaluate :: Arithmetic -> Integer -> Integer
 evaluate (Binop q l r) n = f (evaluate l n) (evaluate r n)
     where
         f = case q of
@@ -19,7 +19,7 @@ evaluate (Mod m t) n = (evaluate t n) `mod` m
 evaluate (Constant n) _ = n 
 evaluate (Variable) n = n 
 
-shuffleNode :: Integer -> Shuffle -> Arithetic
+shuffleNode :: Integer -> Shuffle -> Arithmetic
 shuffleNode o (Reverse) = Binop Sub (Constant (o - 1)) (Variable)
 shuffleNode o (Cut c)
     | c < 0 = shuffleNode o (Cut (o + c))
@@ -29,22 +29,22 @@ shuffleNode o (Deal c) = Binop Mul (Constant i) (Variable)
         (_, m, _) = extendedGCD c o
         i = mod m o
 
-composeNode :: Arithetic -> Arithetic -> Arithetic
+composeNode :: Arithmetic -> Arithmetic -> Arithmetic
 composeNode (Binop f l r) n = Binop f (composeNode l n) (composeNode r n)
 composeNode (Variable) n = n
 composeNode o _ = o
 
-shufflesToArithmetic :: Integer -> [Shuffle] -> Arithetic
+shufflesToArithmetic :: Integer -> [Shuffle] -> Arithmetic
 shufflesToArithmetic o ([]) = error "Undefined for 0 shuffles"
 shufflesToArithmetic o (x:[]) = shuffleNode o x
 shufflesToArithmetic o (x:xs) = composeNode (shuffleNode o x) (shufflesToArithmetic o xs)
 
-depth :: Arithetic -> Int
+depth :: Arithmetic -> Int
 depth (Constant _) = 0
 depth (Variable) = 0
 depth (Binop _ l r) = (max (depth l) (depth r)) + 1
 
-simplify :: Arithetic -> Arithetic
+simplify :: Arithmetic -> Arithmetic
 simplify e@(Binop Sub l r)                       = simplify (Binop Add l (Binop Mul (Constant (-1)) r))
 simplify e@(Binop Add (Constant l) (Constant r)) = Constant (l + r)
 simplify e@(Binop Mul (Constant l) (Constant r)) = Constant (l * r)
@@ -59,13 +59,13 @@ simplify e@(Binop f l r)                         = n
 simplify e@(Mod m c)                             = Mod m (simplify c)
 simplify e = e
 
-modTree :: Integer -> Arithetic -> Arithetic
+modTree :: Integer -> Arithmetic -> Arithmetic
 modTree n (Binop f l r) = Binop f (modTree n l) (modTree n r)
 modTree n (Mod m c) = Mod m (modTree n c )
 modTree n (Constant m) = Constant (m `mod` n)
 modTree _ x = x
 
-composeNTimesMod :: Integer -> Integer -> Arithetic -> Arithetic
+composeNTimesMod :: Integer -> Integer -> Arithmetic -> Arithmetic
 composeNTimesMod n m p
     | n == 1 = p
     | c == 0 = modTree m . simplify $ f
