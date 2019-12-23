@@ -14,11 +14,11 @@ data BinopType = Add | Mul deriving (Show, Eq)
 data Arithmetic = Binop BinopType Arithmetic Arithmetic | Mod Integer Arithmetic | Constant Integer | Variable deriving (Show, Eq)
 
 instance Semigroup Arithmetic where
-    (<>) (Binop f l r) n = simplify (Binop f (l <> n) (r <> n))
+    (<>) (Binop f l r) n     = simplify (Binop f (l <> n) (r <> n))
     (<>) (Mod m c) (Mod _ v) = simplify (Mod m (c <> v))
-    (<>) (Mod m c) n = simplify (Mod m (c <> n))
-    (<>) (Variable) n = simplify n
-    (<>) o _ = o
+    (<>) (Mod m c) n         = simplify (Mod m (c <> n))
+    (<>) (Variable) n        = simplify n
+    (<>) o _                 = o
 
 (<@>) :: Arithmetic -> Integer -> Integer
 (<@>) (Binop q l r) n = f (l <@> n) (r <@> n)
@@ -33,11 +33,12 @@ instance Semigroup Arithmetic where
 shuffleNode :: Integer -> Shuffle -> Arithmetic
 shuffleNode o (Reverse) = Binop Add (Constant (o - 1)) (Binop Mul (Constant (-1)) Variable)
 shuffleNode o (Cut c)
-    | c < 0 = shuffleNode o (Cut (o + c))
-    | otherwise = Binop Add (Constant c) (Variable)
-shuffleNode o (Deal c) = Binop Mul (Constant (mod m o)) (Variable) where (_, m, _) = extendedGCD c o
+    | c < 0             = shuffleNode o (Cut (o + c))
+    | otherwise         = Binop Add (Constant c) (Variable)
+shuffleNode o (Deal c)  = Binop Mul (Constant (mod m o)) (Variable) where (_, m, _) = extendedGCD c o
 
 simplify :: Arithmetic -> Arithmetic
+simplify (Mod m c)                             = Mod m (modTree m . simplify $ c)
 simplify (Binop Add (Constant l) (Constant r)) = Constant (l + r)
 simplify (Binop Mul (Constant l) (Constant r)) = Constant (l * r)
 simplify (Binop Add l r@(Binop Add rl rr))     = simplify (Binop Add (simplify (Binop Add l rl)) (simplify rr))
@@ -48,14 +49,13 @@ simplify (Binop f l r)                         = n
         sl = simplify l
         sr = simplify r
         n = if (sl /= l) || (sr /= r) then simplify (Binop f sl sr) else (Binop f l r)
-simplify (Mod m c)                             = Mod m (modTree m . simplify $ c)
 simplify e = e
 
 modTree :: Integer -> Arithmetic -> Arithmetic
 modTree n (Binop f l r) = Binop f (modTree n l) (modTree n r)
-modTree n (Mod m c) = Mod m (modTree n c )
-modTree n (Constant m) = Constant (m `mod` n)
-modTree _ x = x
+modTree n (Mod m c)     = Mod m (modTree n c )
+modTree n (Constant m)  = Constant (m `mod` n)
+modTree _ x             = x
 
 parseShuffle :: String -> Shuffle
 parseShuffle s 

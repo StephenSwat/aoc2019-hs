@@ -12,7 +12,7 @@ main = do {
         c = 10007
 
         i = parseShuffles s;
-        b = Mod c (sconcat . Data.List.NonEmpty.map (shuffleNode c) . Data.List.NonEmpty.fromList $ i)
+        b = Mod c (sconcat . fmap (shuffleNode c) . Data.List.NonEmpty.fromList $ i)
     in do {
         print (find ((== 2019) . (b <@>)) [0..c-1]);
     }

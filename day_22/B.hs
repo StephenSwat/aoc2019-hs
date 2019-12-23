@@ -11,7 +11,7 @@ main = do {
         t = 101741582076661
 
         i = parseShuffles s;
-        b = sconcat . Data.List.NonEmpty.map (shuffleNode c) . Data.List.NonEmpty.fromList $ i
+        b = sconcat . fmap (shuffleNode c) . Data.List.NonEmpty.fromList $ i
 
         q = stimes t (Mod c b)
     in do {
